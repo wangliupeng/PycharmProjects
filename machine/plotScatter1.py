@@ -2,16 +2,16 @@
 import matplotlib.pyplot as plt
 import kNN
 
-group, labels = kNN.creatDataSet()
+group, label = kNN.creatDataSet()
 
-x_coords = group[:, 0]
-y_coords = group[:, 1]
+x_coord = group[:, 0]
+y_coord = group[:, 1]
 
 # 作出散点图
-plt.scatter(x_coords, y_coords, marker='s')
+plt.scatter(x_coord, y_coord, marker='s')
 
-#添加labels
-for x, y, z in zip(x_coords, y_coords, labels):
+# 添加labels
+for x, y, z in zip(x_coord, y_coord, label):
     plt.annotate(
         '%s' %z,
         xy=(x, y),
