@@ -10,14 +10,22 @@ import kNN
 #     print(distance)
 
 # datingMatrix, datingLabel = kNN.fileToMatrix('datingTestSet2.txt')
-
+#
 # print(datingMatrix)
-# print(datingLabel)
-
+# # print(datingLabel)
+#
 # normDatingMatrix = kNN.normDatingData(datingMatrix)
-
+#
 # print(normDatingMatrix)
 
 # kNN.datingClassTest()
 
-kNN.classifyPerson()
+# kNN.classifyPerson()
+
+# testVector = kNN.imgToVector('digits/trainingDigits/4_113.txt')
+# print(testVector[0, 0:5])
+
+# kNN.handWritingClassTest()
+
+classifierResult = kNN.classifyPicture('digits/5.jpeg') #testT() #
+print(classifierResult)

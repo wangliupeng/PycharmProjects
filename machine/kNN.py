@@ -1,5 +1,8 @@
 from numpy import * #导入科学计算包NumPy
+import numpy as np
 import operator # 运算符模块
+from os import listdir
+from PIL import Image
 
 def creatDataSet(): # 创建了数据集和标签,用于分类
     group = array([[1.0, 1.1], [1.0, 1.0], [0.0, 0.0], [0.0, 0.1]])
@@ -10,6 +13,7 @@ def creatDataSet(): # 创建了数据集和标签,用于分类
 def classify0(inX, dataSet, labels, k):
     datasetSize = dataSet.shape[0]
     diffMat = tile(inX, (datasetSize, 1)) - dataSet #复制inX成多个数组与dataSet作差
+    print(diffMat.shape)
     squDiffMat = diffMat**2 #每个元素进行平方
     squDistances = squDiffMat.sum(axis=1) #对应相加
     distances = squDistances**0.5 #每个元素进行开方
@@ -17,7 +21,6 @@ def classify0(inX, dataSet, labels, k):
     classCount = {}
     for i in range(k):
         voteIlabel = labels[sortedDistIndicies[i]] #找出对应标签
-        print(voteIlabel)
         classCount[voteIlabel] = classCount.get(voteIlabel, 0) + 1 #构造字典
     sortedClassCount = sorted(classCount.items(), key=operator.itemgetter(1), reverse=True)
     return sortedClassCount[0][0]
@@ -52,7 +55,7 @@ def normDatingData(dataSet):
 def datingClassTest():
     hoRatio = 0.10  # hold out 10%
     datingMatrix, datingLabels = fileToMatrix('datingTestSet2.txt')  # load data setfrom file
-    normMat = normDatingData(datingMatrix)
+    normMat, minVals, ranges = normDatingData(datingMatrix)
     rows = normMat.shape[0]
     numTestVecs = int(rows * hoRatio)
     errorCount = 0.0
@@ -63,7 +66,7 @@ def datingClassTest():
     print("错误率: %f" % (errorCount / float(numTestVecs)))
 
 def classifyPerson():
-    resultList = ['不喜欢', '魅力一般', '极具魅力']
+    resultList = ['毫无魅力', '魅力一般', '极具魅力']
     percentTats = float(input("玩视频游戏所耗时间百分比："))
     ffMiles = float(input("每年获得的飞行常客里程数："))
     iceCream = float(input("每周消费的冰淇淋公升数："))
@@ -72,4 +75,81 @@ def classifyPerson():
     person = array([ffMiles, percentTats, iceCream])
     normPerson = (person-minVals)/ranges
     classifierResult = classify0(normPerson, normMat, datingLabels, 5)
-    print("你喜欢这个人的可能性：", resultList[classifierResult-1])
+    print("此人魅力值：", resultList[classifierResult-1])
+
+def imgToVector(filename):
+    imgVector = zeros((1, 1024))
+    file = open(filename)
+    for i in range(32):
+        line = file.readline()
+        for j in range(32):
+            imgVector[0, 32*i+j] = int(line[j])
+    return imgVector
+
+def handWritingClassTest():
+    hwLabels = []
+    trainingFileList = listdir('digits/trainingDigits') #导入所有训练文件
+    numTrain = len(trainingFileList) #统计训练文件数目
+    trainingMatrix = zeros((numTrain, 1024))
+    # print(numTrain)
+    for i in range(numTrain):
+        fileNameStr = trainingFileList[i] #找处文件名
+        fileStr = fileNameStr.split('.')[0] #文件名中点前的部分
+        classNumStr = int(fileStr.split('_')[0]) #文件名中_前的部分
+        hwLabels.append(classNumStr) #标签——与文件中数字一致的，文件名中的数字
+        trainingMatrix[i, :] = imgToVector('digits/trainingDigits/%s' % fileNameStr)
+    testFileList = listdir('digits/testDigits')
+    errorCount = 0.0
+    numTest = len(testFileList)
+    for i in range(numTest):
+        fileNameStr = testFileList[i]
+        fileStr = fileNameStr.split('.')[0]
+        classNumStr = int(fileStr.split('_')[0])
+        testVector = imgToVector('digits/testDigits/%s' % fileNameStr)
+        classifierResult = classify0(testVector, trainingMatrix, hwLabels, 3)
+        print("分类器返回的是 %d, 实际上是 %d" % (classifierResult, classNumStr))
+        if(classifierResult != classNumStr): errorCount += 1.0
+    print("\n 总错误个数：%d" % errorCount)
+    print("\n 错误率：%f" % (errorCount/float(numTest)))
+
+#picture of other type
+def classifyPicture(filename):
+    hwLabels = []
+    trainingFileList = listdir('digits/trainingDigits')  # 导入所有训练文件
+    numTrain = len(trainingFileList)  # 统计训练文件数目
+    trainingMatrix = zeros((numTrain, 1024))
+    for i in range(numTrain):
+        fileNameStr = trainingFileList[i]  # 找处文件名
+        fileStr = fileNameStr.split('.')[0]  # 文件名中点前的部分
+        classNumStr = int(fileStr.split('_')[0])  # 文件名中_前的部分
+        hwLabels.append(classNumStr)  # 标签——与文件中数字一致的，文件名中的数字
+        trainingMatrix[i, :] = imgToVector('digits/trainingDigits/%s' % fileNameStr)
+
+    im = Image.open(filename)
+    out = im.resize((32, 32), Image.ANTIALIAS)
+    out = out.convert("L")
+    data = out.getdata()
+    data = np.array(data, dtype='int')
+    # print(data)
+    data[data < 255] = int(0)   #设为0
+    data[data > 1] = int(1)  #255为黑，设为1
+    # print(data.dtype)
+    # mMat = np.reshape(data, (32, 32))
+    # np.savetxt("5.txt", mMat, "%d")
+    classifierResult = classify0(data, trainingMatrix, hwLabels, 10)
+    return classifierResult
+
+# def testT():
+#     hwLabels = []
+#     trainingFileList = listdir('digits/trainingDigits')  # 导入所有训练文件
+#     numTrain = len(trainingFileList)  # 统计训练文件数目
+#     trainingMatrix = zeros((numTrain, 1024))
+#     for i in range(numTrain):
+#         fileNameStr = trainingFileList[i]  # 找处文件名
+#         fileStr = fileNameStr.split('.')[0]  # 文件名中点前的部分
+#         classNumStr = int(fileStr.split('_')[0])  # 文件名中_前的部分
+#         hwLabels.append(classNumStr)  # 标签——与文件中数字一致的，文件名中的数字
+#         trainingMatrix[i, :] = imgToVector('digits/trainingDigits/%s' % fileNameStr)
+#     testVector = imgToVector('digits/testDigits/1_11.txt')
+#     classifierResult = classify0(testVector, trainingMatrix, hwLabels, 3)
+#     return classifierResult
